@@ -1,0 +1,6 @@
+import fs from 'node:fs/promises';
+const names=['index.html','privacy.html','terms.html','style.css'];
+const pages=Object.fromEntries(await Promise.all(names.map(async name=>['/'+name,await fs.readFile(new URL('./public/'+name,import.meta.url),'utf8')])));
+const source="const pages = "+JSON.stringify(pages)+";\nexport default {fetch(request){const url=new URL(request.url);const path=url.pathname==='/'?'/index.html':url.pathname;const body=pages[path];const headers={'Content-Type':path.endsWith('.css')?'text/css; charset=utf-8':'text/html; charset=utf-8','Content-Security-Policy':\"default-src 'none'; style-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'\",'X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','Cache-Control':'public, max-age=300'};if(!['GET','HEAD'].includes(request.method))return new Response('Method not allowed',{status:405,headers:{...headers,Allow:'GET, HEAD'}});return new Response(request.method==='HEAD'?null:(body??'Not found'),{status:body?200:404,headers});}};\n";
+await fs.mkdir(new URL('./dist/',import.meta.url),{recursive:true});await fs.writeFile(new URL('./dist/worker.mjs',import.meta.url),source);
+console.log('Built three static information pages and stylesheet.');
